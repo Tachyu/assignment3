@@ -8,7 +8,6 @@ This file defines layer types that are commonly used for recurrent neural
 networks.
 """
 
-
 def rnn_step_forward(x, prev_h, Wx, Wh, b):
     """
     Run the forward pass for a single timestep of a vanilla RNN that uses a tanh
