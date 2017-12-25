@@ -1,0 +1,3 @@
+activate tensorflow
+jupyter notebook
+pause
