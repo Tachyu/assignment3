@@ -151,7 +151,8 @@ class CaptioningRNN(object):
           # feature 作为h0输入
           out_rnn_or_lstm, cache_rnn_or_lstm = rnn_forward(out_embe, out_proj, Wx, Wh, b)#h: N, T, H
         else:
-          pass  
+          out_rnn_or_lstm, cache_rnn_or_lstm = lstm_forward(out_embe, out_proj, Wx, Wh, b)#h: N, T, H
+
         out_tem, cache_tem = temporal_affine_forward(out_rnn_or_lstm, W_vocab, b_vocab)
         loss, dtemporal_out = temporal_softmax_loss(out_tem, captions_out, mask)
 
@@ -160,7 +161,9 @@ class CaptioningRNN(object):
         if self.cell_type == 'rnn':
           dword_embedding_out, daffine_out, grads['Wx'], grads['Wh'], grads['b'] = rnn_backward(drnn_or_lstm_out, cache_rnn_or_lstm)
         else:
-          pass  
+          dword_embedding_out, daffine_out, grads['Wx'], grads['Wh'], grads['b'] = lstm_backward(drnn_or_lstm_out, cache_rnn_or_lstm)  
+        
+        
         grads['W_embed'] = word_embedding_backward(dword_embedding_out, cache_embe)
         _, grads['W_proj'], grads['b_proj'] = affine_backward(daffine_out, cache_proj)
         ############################################################################
@@ -227,19 +230,19 @@ class CaptioningRNN(object):
 
                 # - features: Array of input image features of shape (N, D).
         # - max_length: Maximum length T of generated captions.
-        N, D = features.shape
         affine_out, _ = affine_forward(features, W_proj, b_proj)
 
         pre_h = affine_out
-        pre_c = np.zeros_like(pre_h.shape)
+        pre_c = np.zeros(pre_h.shape)
         pre_word_idx = self._start * N
-
+        captions[:,0] = self._start
         for i in range(1, max_length):
           pre_word_embed = W_embed[pre_word_idx]
           if self.cell_type == 'rnn':
             next_h, _ = rnn_step_forward(pre_word_embed, pre_h, Wx, Wh, b)
           else:
-            pass
+            next_h, next_c, _ = lstm_step_forward(pre_word_embed, pre_h, pre_c, Wx, Wh, b)
+            pre_c = next_c
           affine_out, _ = affine_forward(next_h, W_vocab, b_vocab) #(N, M)
           word_idx = np.argmax(affine_out, axis = 1)
           captions[:, i] = list(word_idx)
@@ -247,6 +250,7 @@ class CaptioningRNN(object):
             # update
           pre_word_idx = word_idx
           pre_h = next_h
+          
 
 
 
