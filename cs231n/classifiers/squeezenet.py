@@ -84,6 +84,7 @@ class SqueezeNet(object):
         self.labels = tf.placeholder('int32', shape=[None], name='labels')
         self.layers = []
         x = self.image
+        sess.run(tf.global_variables_initializer())
         self.layers = self.extract_features(x, reuse=False)
         self.features = self.layers[-1]
         with tf.variable_scope('classifier'):
@@ -106,5 +107,6 @@ class SqueezeNet(object):
 
         if save_path is not None:
             saver = tf.train.Saver()
-            saver.restore(sess, save_path)
+            saver.restore(sess, save_path+'/squeezenet.ckpt')
+
         self.loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=tf.one_hot(self.labels, NUM_CLASSES), logits=self.classifier))
